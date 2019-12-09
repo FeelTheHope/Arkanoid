@@ -114,7 +114,7 @@ int main(int argc ,char **argv)
     }  
 
     //Creo una texture vuota , specificando le sue caratteristiche come il colore o come deve essere salvata e grandezza
-    SDL_Texture* texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_STREAMING,128,128);
+    SDL_Texture* texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGB888,SDL_TEXTUREACCESS_STREAMING,256,256);
 
     //creo un puntatore ad una locazione di memoria dove verranno allocate le informazioni sui pixel
     Uint8 *pixels = NULL;
@@ -134,14 +134,14 @@ int main(int argc ,char **argv)
     int width,height,comp;
 
     // creo un puntatore di memoria dove verra salvata la texture dove indico il nome dell'immagine, altezza, larghezza 
-    unsigned char *image = stbi_load("hello.png",&width,&height,&comp,STBI_rgb_alpha);
+    unsigned char *image = stbi_load("Images/GameOver.png",&width,&height,&comp,STBI_rgb_alpha);
           
     if(!image)
     {
       return die("unable to load image");
     }
           
-    memcpy(pixels,image,pitch*128);
+    memcpy(pixels,image,pitch*256);
     free(image); //libero lo spazio occupato per copiare l immagine
     SDL_UnlockTexture(texture);
 
@@ -150,7 +150,7 @@ int main(int argc ,char **argv)
     player.y = 400;
     player.width = 80;
     player.height = 20;
-    player.speed =3.00;
+    player.speed =4.00;
 
     ball_t ball;
     ball.x = 300;
@@ -161,6 +161,7 @@ int main(int argc ,char **argv)
     ball.speed_y = -3;
 
     int BRICKS = 45;
+    int remaining_bricks = 45;
     brick_t bricks[45];
     for ( int n = 0, x = 4, y = 10; n < BRICKS; n++, x+=70 ) //A for loop that goes throught the array so we can set the positions
     {
@@ -261,6 +262,19 @@ int main(int argc ,char **argv)
                 {
                   ball.speed_x = -ball.speed_x; //Change x velocity of the ball
                   bricks[n].alive = 0;
+                  remaining_bricks =remaining_bricks -1 ;
+
+                  if (remaining_bricks % 10 == 0)
+                  {
+                    ball.speed_x = ball.speed_x * 1.2f;
+                    ball.speed_y = ball.speed_y * 1.2f;
+                  }
+                  
+                  if (remaining_bricks % 20 == 0)
+                  {
+                    player.speed = player.speed * 1.5f;
+                  }
+                  
                   break; //Stop checking for collision on x axis
                 }
             }
@@ -276,6 +290,17 @@ int main(int argc ,char **argv)
                 {
                   ball.speed_y = -ball.speed_y; //Change y velocity of the ball
                   bricks[n].alive = 0; //Set alive varible to false
+                  remaining_bricks =remaining_bricks -1 ;
+                  if (remaining_bricks % 10 == 0)
+                  {
+                    ball.speed_x = ball.speed_x * 1.2f;
+                    ball.speed_y = ball.speed_y * 1.2f;
+                  }
+                  
+                  if (remaining_bricks % 20 == 0)
+                  {
+                    player.speed = player.speed * 1.5f;
+                  }
                   break; //Stop checking for collision on y axis
                 }
 
@@ -306,10 +331,10 @@ int main(int argc ,char **argv)
       else if ( ball.y+ball.height > 500 ) //if the ball hit the bottom edge of screen
         {
           SDL_Rect rect ; 
-          rect.x = 10; // the rectangle
-          rect.y = 10;
-          rect.w = 400;
-          rect.h = 400;
+          rect.x = 0; // the rectangle
+          rect.y = 0;
+          rect.w = 640;
+          rect.h = 480;
 
           SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
           SDL_RenderClear(renderer);
@@ -317,9 +342,14 @@ int main(int argc ,char **argv)
           SDL_RenderPresent(renderer);
           ball.x = 300;
           ball.y = 370;
+          ball.speed_x = 3.0;
+          ball.speed_y = 3.0;
 
           player.x = 260;
           player.y = 400;
+          player.speed = 3.0f;
+
+          remaining_bricks = BRICKS;
           for (int i = 0; i < BRICKS; i++)
           {
             bricks[i].alive = 1;
