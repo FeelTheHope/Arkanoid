@@ -111,7 +111,39 @@ int main(int argc ,char **argv)
     if(!renderer)
     {
         return die("unable to create renderer");
+    }  
+
+    //Creo una texture vuota , specificando le sue caratteristiche come il colore o come deve essere salvata e grandezza
+    SDL_Texture* texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_STREAMING,128,128);
+
+    //creo un puntatore ad una locazione di memoria dove verranno allocate le informazioni sui pixel
+    Uint8 *pixels = NULL;
+    int pitch = 0;
+
+    //alloco una porzione di memoria nell heap per copiare l immagine
+    if (SDL_LockTexture(texture,NULL,(void **)&pixels,&pitch))
+    {
+        return die("unable to map texture into address space");
     }
+
+    SDL_Log("texture to mapped at %p with pitch %d",pixels,pitch);
+    //int optimaizingpitch = pitch / 4;
+    //put_pixel((Uint32 **)pixels,optimaizingpitch,50,50,0xFFFF00FF);
+
+    // creo i valori necessari per la foto , come altezza e larghezza 
+    int width,height,comp;
+
+    // creo un puntatore di memoria dove verra salvata la texture dove indico il nome dell'immagine, altezza, larghezza 
+    unsigned char *image = stbi_load("hello.png",&width,&height,&comp,STBI_rgb_alpha);
+          
+    if(!image)
+    {
+      return die("unable to load image");
+    }
+          
+    memcpy(pixels,image,pitch*128);
+    free(image); //libero lo spazio occupato per copiare l immagine
+    SDL_UnlockTexture(texture);
 
     Player_t player;
     player.x = 260;
@@ -253,13 +285,12 @@ int main(int argc ,char **argv)
 
         if ( checkCollision(ball.x,ball.y,ball.width,ball.height,player.x,player.y,player.width, player.height)) //Check for collision with the ball
                 {
-                  ball.speed_y = -ball.speed_y; //Change x velocity of the ball  
-                  
+                  ball.speed_y = -ball.speed_y; //Change x velocity of the ball
                 }
 
       if ( ball.x < 0 ) //Check if the ball hit the left edge of screen
         {
-          ball.speed_x = -ball.speed_x; //negate the x velocity
+          ball.speed_x = -ball.speed_x;
         }
 
       else if ( ball.x+ball.height >600 )
@@ -274,11 +305,28 @@ int main(int argc ,char **argv)
 
       else if ( ball.y+ball.height > 500 ) //if the ball hit the bottom edge of screen
         {
-           ball.speed_y = -ball.speed_y;
-        }
+          SDL_Rect rect ; 
+          rect.x = 10; // the rectangle
+          rect.y = 10;
+          rect.w = 400;
+          rect.h = 400;
 
-       
-   
+          SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+          SDL_RenderClear(renderer);
+          SDL_RenderCopy(renderer,texture,NULL,&rect);
+          SDL_RenderPresent(renderer);
+          ball.x = 300;
+          ball.y = 370;
+
+          player.x = 260;
+          player.y = 400;
+          for (int i = 0; i < BRICKS; i++)
+          {
+            bricks[i].alive = 1;
+          }
+          
+          SDL_Delay(3000);
+        }
 
         //pulisco lo schermo con il nero
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
@@ -300,32 +348,25 @@ int main(int argc ,char **argv)
         rect.h = ball.height;
         SDL_RenderFillRect(renderer, &rect);
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_TRANSPARENT);
+        
         for (int i = 0; i < BRICKS; i++)
         {
             if (bricks[i].alive)
             {
-                rect.x = bricks[i].x; // the rectangle
-                rect.y = bricks[i].y;
-                rect.w = bricks[i].width;
-                rect.h = bricks[i].height;
+              rect.x = bricks[i].x; // the rectangle
+              rect.y = bricks[i].y;
+              rect.w = bricks[i].width;
+              rect.h = bricks[i].height;
             }
-                SDL_RenderFillRect(renderer, &rect);
-
+              SDL_RenderFillRect(renderer, &rect);
         }
         //SDL_RenderDrawLine(renderer, start_x, start_y, start_x + offeset, start_y + offeset);
         SDL_RenderPresent(renderer);
-
-        
     }    
     
     
     // Mix_FreeMusic(music);
 
     SDL_Quit();    
-    return 0;    
-
-
-
-
-   
+    return 0;
 }
