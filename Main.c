@@ -2,10 +2,20 @@
 #include <stdio.h>
 #include "SDL2/include/SDL.h"
 #include "SDL2/include/SDL_timer.h"
+#include "SDL2/include/SDL_mixer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <string.h>
 
+
+
+Uint64 NOW, LAST;
+double deltaTime = 0;
+
+
+static const char *MY_COOL_MP3 = "high.wav";
+
+    
 typedef struct Brick //Brick structures which holds 4 elements
 {
   //Elements are used for x and y position of the brick and its width and height
@@ -16,7 +26,7 @@ typedef struct Brick //Brick structures which holds 4 elements
   int alive; //Alive variable. We use to to store in which state the brick is (broken, not broken)
 }brick_t;
 
-typedef struct player 
+typedef struct player
 {
   float x;
   float y;
@@ -25,7 +35,7 @@ typedef struct player
   float speed;
 }Player_t;
 
-typedef struct ball 
+typedef struct ball
 {
   float x;
   float y;
@@ -41,7 +51,7 @@ int checkCollision(float Ax, float Ay, float Aw, float Ah, float Bx, float By, f
   else if ( Ay > By+Bh ) return 0; //if A is more to the right than B
   else if ( Ax+Aw < Bx ) return 0; //if A is higher than B
   else if ( Ax > Bx+Bw ) return 0; //if A is lower than B
- 
+
   return 1; //There is a collision because none of above returned false
 }
 
@@ -60,6 +70,27 @@ int end()
 
 int main(int argc ,char **argv)
 {
+
+
+    //audio
+    // int result = 0;
+    // int flags = MIX_INIT_MP3;
+    // if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+    //     printf("Failed to init SDL\n");
+    //     exit(1);
+    // }
+
+    //  if (flags != (result = Mix_Init(flags))) {
+    //     printf("Could not initialize mixer (result: %d).\n", result);
+    //     printf("Mix_Init: %s\n", Mix_GetError());
+    //     exit(1);
+    // }
+
+    // Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
+    // Mix_Music *music = Mix_LoadMUS(MY_COOL_MP3);
+    // Mix_PlayMusic(music, 1);
+
+
     //inizializzo le sezioni della libreria sdl che mi interessano , in questo caso solo la parte video
     if(SDL_Init(SDL_INIT_VIDEO))
     {
@@ -68,7 +99,7 @@ int main(int argc ,char **argv)
 
     //Creo la finestra dove mostrare il contenuto delle cose
     SDL_Window* window = SDL_CreateWindow("Game", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
-    
+
     if(!window)
     {
         return die("error creating window: %s");
@@ -76,7 +107,7 @@ int main(int argc ,char **argv)
 
     //Creo il renderer che disegnera il necessario sulla finesra creata in precedenza
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-    
+
     if(!renderer)
     {
         return die("unable to create renderer");
@@ -87,18 +118,18 @@ int main(int argc ,char **argv)
     player.y = 400;
     player.width = 80;
     player.height = 20;
-    player.speed =20;
-    
+    player.speed =3.00;
+
     ball_t ball;
     ball.x = 300;
     ball.y = 370;
     ball.width =15;
     ball.height =15;
-    ball.speed_x =5;
-    ball.speed_y = -5;
+    ball.speed_x =3;
+    ball.speed_y = -3;
 
     int BRICKS = 45;
-    brick_t bricks[45]; 
+    brick_t bricks[45];
     for ( int n = 0, x = 4, y = 10; n < BRICKS; n++, x+=70 ) //A for loop that goes throught the array so we can set the positions
     {
       if ( x > 600 ) //If x is near the right edge of the screen
@@ -112,13 +143,30 @@ int main(int argc ,char **argv)
       bricks[n].height = 20; //Height
       bricks[n].alive = 1; //Set alive to true (not broken)
     }
-    
+
     int close_requested = 0;
     int up = 0;
     int down = 0;
     int left = 0;
     int right = 0;
     for(;;){//loop infinito
+
+     LAST = NOW;
+     NOW = SDL_GetPerformanceCounter();
+     deltaTime = (double)((NOW - LAST)*1000 / (double)SDL_GetPerformanceFrequency() );
+
+     const Uint8 *state = SDL_GetKeyboardState(NULL);
+     if (state[SDL_SCANCODE_LEFT])
+    {
+        
+      player.x-=player.speed;
+                   
+    }
+    if (state[SDL_SCANCODE_RIGHT])
+    {
+      player.x+=player.speed ;
+    }
+    
         SDL_Event event;
         while(SDL_PollEvent(&event))
         {
@@ -135,17 +183,17 @@ int main(int argc ,char **argv)
                     up = 1;
                     break;
                 case SDL_SCANCODE_A:
-                case SDL_SCANCODE_LEFT:
-                    player.x-=player.speed;
-                    break;
+               
                 case SDL_SCANCODE_S:
                 case SDL_SCANCODE_DOWN:
                     down = 1;
                     break;
                 case SDL_SCANCODE_D:
-                case SDL_SCANCODE_RIGHT:
-                    player.x+=player.speed;
+               
+                    
                     break;
+
+
                 }
                 break;
             case SDL_KEYUP:
@@ -172,7 +220,7 @@ int main(int argc ,char **argv)
             }
         }
          ball.x += ball.speed_x; //Move the ball on x axis first
- 
+
       for ( int n = 0; n < BRICKS; n++ ) //Go throught the array of bricks
         {
           if ( bricks[n].alive == 1 ) //If the bricks is alive
@@ -180,14 +228,14 @@ int main(int argc ,char **argv)
               if ( checkCollision(ball.x,ball.y,ball.width,ball.height,bricks[n].x,bricks[n].y,bricks[n].width, bricks[n].height)) //Check for collision with the ball
                 {
                   ball.speed_x = -ball.speed_x; //Change x velocity of the ball
-                  bricks[n].alive = 0; //Set the alive variable to false (brick is broken)
+                  bricks[n].alive = 0;
                   break; //Stop checking for collision on x axis
                 }
             }
         }
- 
+
       ball.y += ball.speed_y; //move the ball on y axis second
- 
+
       for ( int n = 0; n < BRICKS; n++ ) //Go throught the array of bricks
         {
           if ( bricks[n].alive == 1 ) //If the brick is alive
@@ -198,49 +246,60 @@ int main(int argc ,char **argv)
                   bricks[n].alive = 0; //Set alive varible to false
                   break; //Stop checking for collision on y axis
                 }
+
+               
             }
         }
- 
+
+        if ( checkCollision(ball.x,ball.y,ball.width,ball.height,player.x,player.y,player.width, player.height)) //Check for collision with the ball
+                {
+                  ball.speed_y = -ball.speed_y; //Change x velocity of the ball  
+                  
+                }
+
       if ( ball.x < 0 ) //Check if the ball hit the left edge of screen
         {
           ball.speed_x = -ball.speed_x; //negate the x velocity
         }
- 
+
       else if ( ball.x+ball.height >600 )
         {
           ball.speed_x = -ball.speed_x;
         }
- 
+
       if ( ball.y < 0 )
         {
           ball.speed_y = -ball.speed_y;
         }
- 
-      else if ( ball.y+ball.height > 400 ) //if the ball hit the bottom edge of screen
+
+      else if ( ball.y+ball.height > 500 ) //if the ball hit the bottom edge of screen
         {
-            //lose
+           ball.speed_y = -ball.speed_y;
         }
+
+       
+   
 
         //pulisco lo schermo con il nero
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
-       
+
         
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_TRANSPARENT); 
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_TRANSPARENT);
         SDL_Rect rect ;
         rect.x = player.x; // the rectangle
         rect.y = player.y;
         rect.w = player.width;
         rect.h = player.height;
         SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 0,0, 255, SDL_ALPHA_TRANSPARENT); 
-        
+        SDL_SetRenderDrawColor(renderer, 0,0, 255, SDL_ALPHA_TRANSPARENT);
+
         rect.x = ball.x; // the rectangle
         rect.y = ball.y;
         rect.w = ball.width;
         rect.h = ball.height;
         SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_TRANSPARENT); 
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_TRANSPARENT);
         for (int i = 0; i < BRICKS; i++)
         {
             if (bricks[i].alive)
@@ -251,12 +310,22 @@ int main(int argc ,char **argv)
                 rect.h = bricks[i].height;
             }
                 SDL_RenderFillRect(renderer, &rect);
-                
+
         }
         //SDL_RenderDrawLine(renderer, start_x, start_y, start_x + offeset, start_y + offeset);
         SDL_RenderPresent(renderer);
-    }   
 
-    SDL_Quit();
-    return 0;
+        
+    }    
+    
+    
+    // Mix_FreeMusic(music);
+
+    SDL_Quit();    
+    return 0;    
+
+
+
+
+   
 }
