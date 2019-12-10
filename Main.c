@@ -115,18 +115,62 @@ int main(int argc ,char **argv)
 
     //Creo una texture vuota , specificando le sue caratteristiche come il colore o come deve essere salvata e grandezza
     SDL_Texture* texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGB888,SDL_TEXTUREACCESS_STREAMING,256,256);
+    SDL_Texture* texture1=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGB888,SDL_TEXTUREACCESS_STREAMING,256,256);
+    SDL_Texture* texture2=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGB888,SDL_TEXTUREACCESS_STREAMING,256,256);
+    SDL_Texture* texture3=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGB888,SDL_TEXTUREACCESS_STREAMING,256,256);
+    
+    
+   
 
     //creo un puntatore ad una locazione di memoria dove verranno allocate le informazioni sui pixel
     Uint8 *pixels = NULL;
     int pitch = 0;
+
+    Uint8 *pixels1 = NULL;
+    int pitch1 = 0;
+
+    Uint8 *pixels2 = NULL;
+    int pitch2 = 0;
+
+    Uint8 *pixels3 = NULL;
+    int pitch3 = 0;
+ 
+ 
 
     //alloco una porzione di memoria nell heap per copiare l immagine
     if (SDL_LockTexture(texture,NULL,(void **)&pixels,&pitch))
     {
         return die("unable to map texture into address space");
     }
-
     SDL_Log("texture to mapped at %p with pitch %d",pixels,pitch);
+
+
+     if (SDL_LockTexture(texture1,NULL,(void **)&pixels1,&pitch1))
+    {
+        return die("unable to map texture into address space");
+    }
+
+    SDL_Log("texture to mapped at %p with pitch %d",pixels1,pitch1);
+
+
+     if (SDL_LockTexture(texture2,NULL,(void **)&pixels2,&pitch2))
+    {
+        return die("unable to map texture into address space");
+    }
+
+    SDL_Log("texture to mapped at %p with pitch %d",pixels3,pitch3);
+
+     if (SDL_LockTexture(texture3,NULL,(void **)&pixels3,&pitch3))
+    {
+        return die("unable to map texture into address space");
+    }
+
+    SDL_Log("texture to mapped at %p with pitch %d",pixels3,pitch3);
+    
+
+   
+
+     
     //int optimaizingpitch = pitch / 4;
     //put_pixel((Uint32 **)pixels,optimaizingpitch,50,50,0xFFFF00FF);
 
@@ -135,39 +179,78 @@ int main(int argc ,char **argv)
 
     // creo un puntatore di memoria dove verra salvata la texture dove indico il nome dell'immagine, altezza, larghezza 
     unsigned char *image = stbi_load("Images/GameOver.png",&width,&height,&comp,STBI_rgb_alpha);
+    unsigned char *p1 = stbi_load("Images/p1.png",&width,&height,&comp,STBI_rgb_alpha);
+    unsigned char *back = stbi_load("Images/back.png",&width,&height,&comp,STBI_rgb_alpha);
+    unsigned char *palla = stbi_load("Images/ball.png",&width,&height,&comp,STBI_rgb_alpha);
+
+
+
+    if(!palla)
+    {
+      return die("unable to load image");
+    }
           
+    memcpy(pixels3,palla,pitch3*256);
+    free(palla); //libero lo spazio occupato per copiare l immagine
+    SDL_UnlockTexture(texture3);
+
+
     if(!image)
     {
       return die("unable to load image");
     }
           
-    memcpy(pixels,image,pitch*256);
+    memcpy(pixels2,image,pitch2*256);
     free(image); //libero lo spazio occupato per copiare l immagine
+    SDL_UnlockTexture(texture2);
+
+   
+
+    if(!back)
+    {
+      return die("unable to load image");
+    }
+
+    memcpy(pixels1,back,pitch1*256);
+    free(back); //libero lo spazio occupato per copiare l immagine
+    SDL_UnlockTexture(texture1);
+
+
+     if(!p1)
+    {
+      return die("unable to load image");
+    }
+          
+    memcpy(pixels,p1,pitch*256);
+    free(p1); //libero lo spazio occupato per copiare l immagine
     SDL_UnlockTexture(texture);
+
 
     Player_t player;
     player.x = 260;
     player.y = 400;
     player.width = 80;
     player.height = 20;
-    player.speed =4.00;
+    player.speed =2.00;
+
+          
 
     ball_t ball;
     ball.x = 300;
     ball.y = 370;
     ball.width =15;
     ball.height =15;
-    ball.speed_x =3;
-    ball.speed_y = -3;
+    ball.speed_x =2;
+    ball.speed_y = -2;
 
-    int BRICKS = 45;
+    int BRICKS = 48;
     int remaining_bricks = 45;
-    brick_t bricks[45];
-    for ( int n = 0, x = 4, y = 10; n < BRICKS; n++, x+=70 ) //A for loop that goes throught the array so we can set the positions
+    brick_t bricks[48];
+    for ( int n = 0, x = 45, y = 20; n < BRICKS; n++, x+=70 ) //A for loop that goes throught the array so we can set the positions
     {
-      if ( x > 600 ) //If x is near the right edge of the screen
+      if ( x > 550 ) //If x is near the right edge of the screen
         {
-          x = 4; //We start going from the left again
+          x = 45; //We start going from the left again
           y += 25; //And move a down a little
         }
       bricks[n].x = x; //Set currents bricks x position
@@ -336,9 +419,11 @@ int main(int argc ,char **argv)
           rect.w = 640;
           rect.h = 480;
 
+          
+
           SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
           SDL_RenderClear(renderer);
-          SDL_RenderCopy(renderer,texture,NULL,&rect);
+          SDL_RenderCopy(renderer,texture2,NULL,&rect);
           SDL_RenderPresent(renderer);
           ball.x = 300;
           ball.y = 370;
@@ -358,28 +443,42 @@ int main(int argc ,char **argv)
           SDL_Delay(3000);
         }
 
-        //pulisco lo schermo con il nero
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(renderer);
+        SDL_Rect rect1 ; 
+        rect1.x = 0; // the rectangle
+        rect1.y = 0;
+        rect1.w = 640;
+        rect1.h = 480;
 
+        //pulisco lo schermo con il nero
+        // SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        // SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_TRANSPARENT);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer,texture1,NULL,&rect1);
         
+
+      
+
         SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_TRANSPARENT);
         SDL_Rect rect ;
         rect.x = player.x; // the rectangle
         rect.y = player.y;
         rect.w = player.width;
         rect.h = player.height;
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 0,0, 255, SDL_ALPHA_TRANSPARENT);
+        SDL_RenderCopy(renderer,texture,NULL,&rect);
+
+        SDL_SetRenderDrawColor(renderer, 0 ,255, 0, SDL_ALPHA_TRANSPARENT);
 
         rect.x = ball.x; // the rectangle
         rect.y = ball.y;
         rect.w = ball.width;
         rect.h = ball.height;
-        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderCopy(renderer,texture3,NULL,&rect);
+
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_TRANSPARENT);
         
-        for (int i = 0; i < BRICKS; i++)
+        for (int i = 0; i < BRICKS - 40 ; i++)
         {
             if (bricks[i].alive)
             {
@@ -390,6 +489,56 @@ int main(int argc ,char **argv)
             }
               SDL_RenderFillRect(renderer, &rect);
         }
+      SDL_SetRenderDrawColor(renderer, 255, 255, 100, SDL_ALPHA_TRANSPARENT);
+       for (int i = 8; i  < BRICKS -32 ; i++)
+        {
+            if (bricks[i].alive)
+            {
+              rect.x = bricks[i].x; // the rectangle
+              rect.y = bricks[i].y;
+              rect.w = bricks[i].width;
+              rect.h = bricks[i].height;
+            }
+              SDL_RenderFillRect(renderer, &rect);
+        }
+         SDL_SetRenderDrawColor(renderer, 0, 100, 255, SDL_ALPHA_TRANSPARENT);
+       for (int i = 16 ; i  < BRICKS -24 ; i++)
+        {
+            if (bricks[i].alive)
+            {
+              rect.x = bricks[i].x; // the rectangle
+              rect.y = bricks[i].y;
+              rect.w = bricks[i].width;
+              rect.h = bricks[i].height;
+            }
+              SDL_RenderFillRect(renderer, &rect);
+        }
+SDL_SetRenderDrawColor(renderer, 100, 100, 100, SDL_ALPHA_TRANSPARENT);
+        for (int i = 24 ; i  < BRICKS - 16 ; i++)
+        {
+            if (bricks[i].alive)
+            {
+              rect.x = bricks[i].x; // the rectangle
+              rect.y = bricks[i].y;
+              rect.w = bricks[i].width;
+              rect.h = bricks[i].height;
+            }
+              SDL_RenderFillRect(renderer, &rect);
+        }
+
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_TRANSPARENT);
+        for (int i = 32 ; i  < BRICKS  ; i++)
+        {
+            if (bricks[i].alive)
+            {
+              rect.x = bricks[i].x; // the rectangle
+              rect.y = bricks[i].y;
+              rect.w = bricks[i].width;
+              rect.h = bricks[i].height;
+            }
+              SDL_RenderFillRect(renderer, &rect);
+        }
+
         //SDL_RenderDrawLine(renderer, start_x, start_y, start_x + offeset, start_y + offeset);
         SDL_RenderPresent(renderer);
     }    
